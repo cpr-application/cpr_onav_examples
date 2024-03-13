@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+
+import rospy
+
+from clearpath_mission_manager_msgs.msg import *
+from clearpath_mission_manager_msgs.srv import *
+from clearpath_navigation_msgs.msg import *
+
+# A tuple of TAG, lat, lon, alt
+# Generated with Google Earth -- the altitude is not used
+# The tag is used as a placeholder for the generated UUIDs to simplify defining the edges ourselves
+COORDINATES = [
+  ("A", -97.28322817327727,50.12300747122199,0),
+  ("B", -97.28217525643019,50.12171056479555,0), # the first intersection, connects to C and L
+  ("C", -97.28326793963477,50.11981930442499,0), # the second intersection, connects to D and H
+  ("D", -97.28483408203536,50.11926816962462,0),
+  ("E", -97.28486964915798,50.11761512315844,0),
+  ("F", -97.28166555083155,50.11758334859005,0),
+  ("G", -97.28229122963415,50.11952637327663,0),
+  ("H", -97.28167846932446,50.11913714171172,0), # the third intersection, connects to I and C
+
+  # A dead-end side-branch
+  ("I", -97.28219097560832,50.11973533270263,0), # forks from H
+  ("J", -97.28249905504131,50.1199092365631,0),
+  ("K", -97.28242834054022,50.12013941719884,0),
+
+  # Another dead-end side-branch
+  ("L", -97.28242899160524,50.12209511863426,0), # forks from B
+  ("M", -97.28246941874356,50.12229616417419,0),
+  ("N", -97.28325139122391,50.12230651895854,0),
+]
+
+DEFAULT_RADIUS = 2.5
+DEFAULT_SPEED_LIMIT = 1.0
+
+rospy.init_node("map_maker_example_2")
+
+map_maker_service = rospy.ServiceProxy("/mission_manager/create_network_map", CreateNetworkMap)
+map = map_maker_service(
+  "Example Map", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT,
+
+  # The vertices
+  # This is just a simple array of NetworkPoint objects. Each must have a unique ID, a one-letter tag in this
+  # example
+  [
+    NetworkPoint(c[0], c[1], c[2]) for c in COORDINATES
+  ],
+
+  # The edges. This defines the geometry of the map
+  # Edges are unidirectional, so we must manually add edges going in both directions where necessary
+  [
+    NetworkEdgeReq("A", "B", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("B", "A", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("B", "C", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("C", "B", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("C", "D", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("D", "C", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("D", "E", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("E", "D", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("E", "F", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("F", "E", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("F", "G", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("G", "F", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("G", "H", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("H", "G", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("H", "C", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT), # end of the main road & loop
+    NetworkEdgeReq("H", "C", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("H", "I", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("I", "H", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("I", "J", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("J", "I", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("J", "K", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("K", "J", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT), # end of one fork
+
+    NetworkEdgeReq("B", "L", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("L", "B", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("L", "M", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("M", "L", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+
+    NetworkEdgeReq("M", "N", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+    NetworkEdgeReq("N", "M", DEFAULT_RADIUS, DEFAULT_SPEED_LIMIT),
+  ]
+).result
+
+print(map)

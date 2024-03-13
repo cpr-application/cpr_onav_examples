@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+
+import rospy
+from clearpath_mission_manager_msgs.srv import *
+
+rospy.init_node("map_maker_example")
+
+# Create the map
+map_maker_service = rospy.ServiceProxy("/mission_manager/create_network_map", CreateNetworkMap)
+map = map_maker_service("Example Map", 2.5, 1.0, [], []).result
+print(map)
+
+# Get a map by its UUID
+get_map_srv = rospy.ServiceProxy("/mission_manager/get_network_map", GetNetworkMap)
+map = get_map_srv(map.uuid).map
+print(map)
