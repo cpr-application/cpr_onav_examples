@@ -6,8 +6,8 @@ from clearpath_mission_manager_msgs.msg import *
 from clearpath_mission_manager_msgs.srv import *
 from clearpath_navigation_msgs.msg import *
 
-# A tuple of TAG, lat, lon, alt
-# Generated with Google Earth -- the altitude is not used
+# A tuple of (TAG, longitude, latitude, altitude), copied from a Google Earth KML file
+# Tags are added manually to identify each coordinate
 # The tag is used as a placeholder for the generated UUIDs to simplify defining the edges ourselves
 COORDINATES = [
   ("A", -97.28322817327727,50.12300747122199,0),
@@ -43,7 +43,7 @@ map = map_maker_service(
   # This is just a simple array of NetworkPoint objects. Each must have a unique ID, a one-letter tag in this
   # example
   [
-    NetworkPoint(c[0], c[1], c[2]) for c in COORDINATES
+    NetworkPoint(c[0], c[2], c[1]) for c in COORDINATES  # Note that NetworkPoint the order (tag,lat,lon)
   ],
 
   # The edges. This defines the geometry of the map
